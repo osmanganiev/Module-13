@@ -1,0 +1,103 @@
+using System;
+using System.Collections.Generic;
+
+public class Product
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public double Price { get; set; }
+}
+
+public class Order
+{
+    public int Id { get; set; }
+    public List<Product> Items { get; set; } = new List<Product>();
+    public string Address { get; set; }
+    public double Total => Items.Sum(p => p.Price);
+    public string Status { get; set; } = "В обработке";
+}
+
+public class OrderProcessor
+{
+    private List<Product> catalog = new List<Product>
+    {
+        new Product { Id = 1, Name = "Ноутбук", Price = 75000 },
+        new Product { Id = 2, Name = "Мышь", Price = 1500 }
+    };
+
+    public Order CreateOrder()
+    {
+        var order = new Order { Id = new Random().Next(1000, 9999) };
+        Console.WriteLine("Выберите товары (введите ID, 0 — завершить):");
+
+        while (true)
+        {
+            foreach (var p in catalog) Console.WriteLine($"{p.Id}. {p.Name} — {p.Price} руб.");
+            int id = int.Parse(Console.ReadLine());
+            if (id == 0) break;
+
+            var product = catalog.Find(p => p.Id == id);
+            if (product != null)
+            {
+                order.Items.Add(product);
+                Console.WriteLine($"Добавлено: {product.Name}");
+            }
+        }
+
+        if (order.Items.Count == 0)
+        {
+            Console.WriteLine("Корзина пуста. Заказ отменён.");
+            return null;
+        }
+
+        Console.Write("Введите адрес доставки: ");
+        order.Address = Console.ReadLine();
+
+        Console.WriteLine($"Итого к оплате: {order.Total} руб.");
+        Console.Write("Оплатить? (да/нет): ");
+        if (Console.ReadLine().ToLower() != "да")
+        {
+            Console.WriteLine("Оплата отменена.");
+            return null;
+        }
+
+        // Имитация оплаты
+        if (new Random().Next(0, 10) < 8) // 80% успех
+        {
+            order.Status = "Оплачен";
+            Console.WriteLine("Оплата прошла успешно!");
+            ProcessOrder(order);
+        }
+        else
+        {
+            Console.WriteLine("Ошибка оплаты. Попробуйте позже.");
+            return null;
+        }
+
+        return order;
+    }
+
+    private void ProcessOrder(Order order)
+    {
+        Console.WriteLine("Заказ отправлен на склад...");
+        System.Threading.Thread.Sleep(1000);
+        Console.WriteLine("Заказ собран и передан в доставку.");
+        Console.WriteLine($"Заказ №{order.Id} будет доставлен по адресу: {order.Address}");
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var processor = new OrderProcessor();
+        var order = processor.CreateOrder();
+
+        if (order != null)
+            Console.WriteLine($"Заказ №{order.Id} успешно оформлен!");
+        else
+            Console.WriteLine("Заказ не был оформлен.");
+
+        Console.ReadKey();
+    }
+}

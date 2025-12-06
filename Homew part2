@@ -1,0 +1,145 @@
+using System;
+
+// Интерфейс состояния
+public interface ITicketMachineState
+{
+    void SelectTicket(TicketMachine machine);
+    void InsertMoney(TicketMachine machine, double amount);
+    void Cancel(TicketMachine machine);
+    void DispenseTicket(TicketMachine machine);
+}
+
+// Контекст — автомат
+public class TicketMachine
+{
+    public ITicketMachineState CurrentState { get; set; }
+    public double Balance { get; set; } = 0;
+    public double TicketPrice { get; set; } = 100.0;
+    public int TicketsAvailable { get; set; } = 10;
+
+    public TicketMachine()
+    {
+        CurrentState = new IdleState();
+    }
+
+    public void SelectTicket() => CurrentState.SelectTicket(this);
+    public void InsertMoney(double amount) => CurrentState.InsertMoney(this, amount);
+    public void Cancel() => CurrentState.Cancel(this);
+    public void DispenseTicket() => CurrentState.DispenseTicket(this);
+}
+
+// Состояния
+
+public class IdleState : ITicketMachineState
+{
+    public void SelectTicket(TicketMachine machine)
+    {
+        Console.WriteLine("Билет выбран. Внесите деньги (нужно 100 руб.).");
+        machine.CurrentState = new WaitingForMoneyState();
+    }
+
+    public void InsertMoney(TicketMachine machine, double amount) =>
+        Console.WriteLine("Сначала выберите билет.");
+
+    public void Cancel(TicketMachine machine) =>
+        Console.WriteLine("Нечего отменять.");
+
+    public void DispenseTicket(TicketMachine machine) =>
+        Console.WriteLine("Сначала выберите билет.");
+}
+
+public class WaitingForMoneyState : ITicketMachineState
+{
+    public void SelectTicket(TicketMachine machine) =>
+        Console.WriteLine("Билет уже выбран.");
+
+    public void InsertMoney(TicketMachine machine, double amount)
+    {
+        machine.Balance += amount;
+        Console.WriteLine($"Внесено: {amount} руб. Баланс: {machine.Balance} руб.");
+
+        if (machine.Balance >= machine.TicketPrice)
+        {
+            Console.WriteLine("Достаточно средств!");
+            machine.CurrentState = new MoneyReceivedState();
+        }
+    }
+
+    public void Cancel(TicketMachine machine)
+    {
+        if (machine.Balance > 0)
+            Console.WriteLine($"Возвращено: {machine.Balance} руб.");
+        machine.Balance = 0;
+        machine.CurrentState = new IdleState();
+        Console.WriteLine("Транзакция отменена.");
+    }
+
+    public void DispenseTicket(TicketMachine machine) =>
+        Console.WriteLine("Внесите деньги.");
+}
+
+public class MoneyReceivedState : ITicketMachineState
+{
+    public void SelectTicket(TicketMachine machine) =>
+        Console.WriteLine("Билет уже выбран.");
+
+    public void InsertMoney(TicketMachine machine, double amount) =>
+        Console.WriteLine("Достаточно средств. Ожидайте выдачи билета.");
+
+    public void Cancel(TicketMachine machine)
+    {
+        Console.WriteLine($"Возвращено: {machine.Balance} руб.");
+        machine.Balance = 0;
+        machine.CurrentState = new IdleState();
+        Console.WriteLine("Транзакция отменена.");
+    }
+
+    public void DispenseTicket(TicketMachine machine)
+    {
+        if (machine.TicketsAvailable <= 0)
+        {
+            Console.WriteLine("Билеты закончились. Возвращаем деньги.");
+            Console.WriteLine($"Возвращено: {machine.Balance} руб.");
+            machine.Balance = 0;
+            machine.CurrentState = new IdleState();
+            return;
+        }
+
+        machine.TicketsAvailable--;
+        double change = machine.Balance - machine.TicketPrice;
+        machine.Balance = 0;
+
+        Console.WriteLine("Билет выдан!");
+        if (change > 0)
+            Console.WriteLine($"Сдача: {change} руб.");
+
+        machine.CurrentState = new IdleState();
+    }
+}
+
+// Клиентский код
+class Program
+{
+    static void Main()
+    {
+        var machine = new TicketMachine();
+
+        Console.WriteLine("=== Автомат по продаже билетов ===\n");
+
+        machine.SelectTicket();
+        machine.InsertMoney(50);
+        machine.InsertMoney(60);  // Теперь 110 >= 100
+        machine.DispenseTicket();
+
+        Console.WriteLine("\nНовый пользователь:");
+        machine.SelectTicket();
+        machine.Cancel();  // Отмена
+
+        Console.WriteLine("\nЕщё один:");
+        machine.SelectTicket();
+        machine.InsertMoney(200);
+        machine.DispenseTicket();  // Со сдачей
+
+        Console.WriteLine("\nГотово!");
+    }
+}

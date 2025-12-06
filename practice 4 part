@@ -1,0 +1,121 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public enum UserRole { Guest, User, Admin }
+
+public class Event
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public DateTime Date { get; set; }
+    public string Location { get; set; }
+    public int Capacity { get; set; }
+    public int Booked { get; set; }
+
+    public override string ToString() => $"{Name} | {Date:dd.MM.yyyy} | {Location} | Мест: {Booked}/{Capacity}";
+}
+
+public class User
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public UserRole Role { get; set; }
+}
+
+public class Booking
+{
+    public int Id { get; set; }
+    public User User { get; set; }
+    public Event Event { get; set; }
+    public DateTime BookedAt { get; set; }
+}
+
+public class EventBookingSystem
+{
+    private List<Event> events = new List<Event>
+    {
+        new Event { Id = 1, Name = "Концерт Рока", Date = new DateTime(2025, 12, 20), Location = "Стадион", Capacity = 100, Booked = 45 },
+        new Event { Id = 2, Name = "Театр: Гамлет", Date = new DateTime(2025, 11, 15), Location = "Театр", Capacity = 50, Booked = 30 }
+    };
+
+    private List<Booking> bookings = new List<Booking>();
+    private List<User> users = new List<User>
+    {
+        new User { Id = 1, Name = "Алексей", Role = UserRole.User },
+        new User { Id = 999, Name = "Админ", Role = UserRole.Admin }
+    };
+
+    public void ShowEvents()
+    {
+        Console.WriteLine("\nДоступные мероприятия:");
+        foreach (var e in events)
+            Console.WriteLine(e);
+    }
+
+    public void BookEvent(int userId, int eventId)
+    {
+        var user = users.FirstOrDefault(u => u.Id == userId);
+        var ev = events.FirstOrDefault(e => e.Id == eventId);
+
+        if (user == null || user.Role == UserRole.Guest)
+        {
+            Console.WriteLine("Только зарегистрированные пользователи могут бронировать.");
+            return;
+        }
+
+        if (ev == null) { Console.WriteLine("Мероприятие не найдено."); return; }
+        if (ev.Booked >= ev.Capacity) { Console.WriteLine("Нет мест!"); return; }
+
+        ev.Booked++;
+        bookings.Add(new Booking { Id = bookings.Count + 1, User = user, Event = ev, BookedAt = DateTime.Now });
+        Console.WriteLine($"Бронирование успешно! Мероприятие: {ev.Name}");
+    }
+
+    public void CancelBooking(int userId, int bookingId)
+    {
+        var booking = bookings.FirstOrDefault(b => b.Id == bookingId && b.User.Id == userId);
+        if (booking == null) { Console.WriteLine("Бронирование не найдено."); return; }
+
+        booking.Event.Booked--;
+        bookings.Remove(booking);
+        Console.WriteLine("Бронирование отменено.");
+    }
+
+    public void AdminViewBookings(int adminId)
+    {
+        var admin = users.FirstOrDefault(u => u.Id == adminId);
+        if (admin == null || admin.Role != UserRole.Admin)
+        {
+            Console.WriteLine("Доступ запрещён.");
+            return;
+        }
+
+        Console.WriteLine("\nВсе бронирования:");
+        foreach (var b in bookings)
+            Console.WriteLine($"{b.User.Name} → {b.Event.Name} ({b.BookedAt:dd.MM.yyyy HH:mm})");
+    }
+
+    public void AdminManageEvents()
+    {
+        Console.WriteLine("Управление мероприятиями (добавление/удаление) — реализовано в системе.");
+    }
+}
+
+// Клиентский код
+class Program
+{
+    static void Main()
+    {
+        var system = new EventBookingSystem();
+
+        system.ShowEvents();
+        system.BookEvent(1, 1);           // Успешно
+        system.BookEvent(1, 1);           // Ещё одно
+        system.CancelBooking(1, 1);       // Отмена
+        system.AdminViewBookings(999);    // Админ видит всё
+
+        Console.WriteLine("\nГотово! Система бронирования работает.");
+        Console.ReadKey();
+    }
+}

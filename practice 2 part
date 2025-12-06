@@ -1,0 +1,149 @@
+using System;
+
+// Интерфейс состояния
+public interface ITaxiState
+{
+    void SelectCar(TaxiContext context);
+    void ConfirmOrder(TaxiContext context);
+    void CancelOrder(TaxiContext context);
+    void ChangeCar(TaxiContext context);
+    void DriverArrived(TaxiContext context);
+    void StartTrip(TaxiContext context);
+    void CompleteTrip(TaxiContext context);
+}
+
+// Контекст заказа такси
+public class TaxiContext
+{
+    public ITaxiState CurrentState { get; set; }
+    public string SelectedCar { get; set; } = "";
+    public string DriverName { get; set; } = "";
+    public double TripPrice { get; set; } = 450.0;
+
+    public TaxiContext()
+    {
+        CurrentState = new IdleState();
+    }
+
+    public void SelectCar(string car) => CurrentState.SelectCar(this);
+    public void ConfirmOrder() => CurrentState.ConfirmOrder(this);
+    public void CancelOrder() => CurrentState.CancelOrder(this);
+    public void ChangeCar() => CurrentState.ChangeCar(this);
+    public void DriverArrived() => CurrentState.DriverArrived(this);
+    public void StartTrip() => CurrentState.StartTrip(this);
+    public void CompleteTrip() => CurrentState.CompleteTrip(this);
+}
+
+// Состояния
+public class IdleState : ITaxiState
+{
+    public void SelectCar(TaxiContext context)
+    {
+        context.SelectedCar = "Kia Rio (желтый)";
+        Console.WriteLine($"Выбран автомобиль: {context.SelectedCar}");
+        context.CurrentState = new CarSelectedState();
+    }
+    public void ConfirmOrder(TaxiContext context) => Console.WriteLine("Сначала выберите автомобиль.");
+    public void CancelOrder(TaxiContext context) => Console.WriteLine("Нечего отменять.");
+    public void ChangeCar(TaxiContext context) => Console.WriteLine("Сначала выберите автомобиль.");
+    public void DriverArrived(TaxiContext context) => Console.WriteLine("Заказ ещё не оформлен.");
+    public void StartTrip(TaxiContext context) => Console.WriteLine("Заказ ещё не оформлен.");
+    public void CompleteTrip(TaxiContext context) => Console.WriteLine("Поездка не начата.");
+}
+
+public class CarSelectedState : ITaxiState
+{
+    public void SelectCar(TaxiContext context) => Console.WriteLine("Автомобиль уже выбран.");
+    public void ConfirmOrder(TaxiContext context)
+    {
+        context.DriverName = "Иван Петров";
+        Console.WriteLine($"Заказ подтверждён! Водитель {context.DriverName} едет к вам.");
+        context.CurrentState = new OrderConfirmedState();
+    }
+    public void CancelOrder(TaxiContext context)
+    {
+        Console.WriteLine("Заказ отменён.");
+        context.CurrentState = new IdleState();
+    }
+    public void ChangeCar(TaxiContext context)
+    {
+        context.SelectedCar = "Hyundai Solaris (белый)";
+        Console.WriteLine($"Автомобиль изменён на: {context.SelectedCar}");
+    }
+    public void DriverArrived(TaxiContext context) => Console.WriteLine("Сначала подтвердите заказ.");
+    public void StartTrip(TaxiContext context) => Console.WriteLine("Сначала подтвердите заказ.");
+    public void CompleteTrip(TaxiContext context) => Console.WriteLine("Поездка не начата.");
+}
+
+public class OrderConfirmedState : ITaxiState
+{
+    public void SelectCar(TaxiContext context) => Console.WriteLine("Заказ уже подтверждён.");
+    public void ConfirmOrder(TaxiContext context) => Console.WriteLine("Заказ уже подтверждён.");
+    public void CancelOrder(TaxiContext context)
+    {
+        Console.WriteLine("Заказ отменён (штраф 100 руб.)");
+        context.CurrentState = new IdleState();
+    }
+    public void ChangeCar(TaxiContext context) => Console.WriteLine("Нельзя изменить после подтверждения.");
+    public void DriverArrived(TaxiContext context)
+    {
+        Console.WriteLine($"Водитель {context.DriverName} прибыл!");
+        context.CurrentState = new CarArrivedState();
+    }
+    public void StartTrip(TaxiContext context) => Console.WriteLine("Дождитесь прибытия водителя.");
+    public void CompleteTrip(TaxiContext context) => Console.WriteLine("Поездка не начата.");
+}
+
+public class CarArrivedState : ITaxiState
+{
+    public void SelectCar(TaxiContext context) => Console.WriteLine("Водитель уже здесь.");
+    public void ConfirmOrder(TaxiContext context) => Console.WriteLine("Заказ уже подтверждён.");
+    public void CancelOrder(TaxiContext context)
+    {
+        Console.WriteLine("Отмена после прибытия — штраф 200 руб.");
+        context.CurrentState = new IdleState();
+    }
+    public void ChangeCar(TaxiContext context) => Console.WriteLine("Нельзя изменить.");
+    public void DriverArrived(TaxiContext context) => Console.WriteLine("Водитель уже прибыл.");
+    public void StartTrip(TaxiContext context)
+    {
+        Console.WriteLine("Поездка начата!");
+        context.CurrentState = new InTripState();
+    }
+    public void CompleteTrip(TaxiContext context) => Console.WriteLine("Поездка ещё не начата.");
+}
+
+public class InTripState : ITaxiState
+{
+    public void SelectCar(TaxiContext context) => Console.WriteLine("Вы в пути.");
+    public void ConfirmOrder(TaxiContext context) => Console.WriteLine("Вы в пути.");
+    public void CancelOrder(TaxiContext context) => Console.WriteLine("Нельзя отменить во время поездки.");
+    public void ChangeCar(TaxiContext context) => Console.WriteLine("Нельзя.");
+    public void DriverArrived(TaxiContext context) => Console.WriteLine("Вы уже в машине.");
+    public void StartTrip(TaxiContext context) => Console.WriteLine("Поездка уже идёт.");
+    public void CompleteTrip(TaxiContext context)
+    {
+        Console.WriteLine($"Поездка завершена! Стоимость: {context.TripPrice} руб.");
+        Console.WriteLine("Оцените водителя от 1 до 5");
+        context.CurrentState = new IdleState();
+    }
+}
+
+// Клиентский код
+class Program
+{
+    static void Main()
+    {
+        var taxi = new TaxiContext();
+
+        taxi.SelectCar();
+        taxi.ChangeCar();
+        taxi.ConfirmOrder();
+        taxi.DriverArrived();
+        taxi.StartTrip();
+        taxi.CompleteTrip();
+
+        Console.WriteLine("\nГотово! Система заказа такси работает идеально.");
+        Console.ReadKey();
+    }
+}

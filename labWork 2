@@ -1,0 +1,116 @@
+using System;
+
+// Интерфейс состояния
+public interface IBookingState
+{
+    void SelectRoom(BookingContext context);
+    void ConfirmBooking(BookingContext context);
+    void Pay(BookingContext context);
+    void Cancel(BookingContext context);
+    void ChangeRoom(BookingContext context);
+}
+
+// Контекст бронирования
+public class BookingContext
+{
+    public IBookingState CurrentState { get; set; }
+    public string SelectedRoom { get; set; }
+    public double Amount { get; set; } = 5000.0;
+    public double PaidAmount { get; set; } = 0;
+
+    public BookingContext()
+    {
+        CurrentState = new IdleState();
+    }
+
+    public void SelectRoom(string room) => CurrentState.SelectRoom(this);
+    public void ConfirmBooking() => CurrentState.ConfirmBooking(this);
+    public void Pay(double amount) => CurrentState.Pay(this);
+    public void Cancel() => CurrentState.Cancel(this);
+    public void ChangeRoom() => CurrentState.ChangeRoom(this);
+}
+
+// Состояния
+public class IdleState : IBookingState
+{
+    public void SelectRoom(BookingContext context)
+    {
+        context.SelectedRoom = "Номер 305 (Люкс)";
+        Console.WriteLine($"Выбран номер: {context.SelectedRoom}");
+        context.CurrentState = new RoomSelectedState();
+    }
+    public void ConfirmBooking(BookingContext context) => Console.WriteLine("Сначала выберите номер.");
+    public void Pay(BookingContext context) => Console.WriteLine("Сначала выберите и подтвердите бронирование.");
+    public void Cancel(BookingContext context) => Console.WriteLine("Нечего отменять.");
+    public void ChangeRoom(BookingContext context) => Console.WriteLine("Сначала выберите номер.");
+}
+
+public class RoomSelectedState : IBookingState
+{
+    public void SelectRoom(BookingContext context) => Console.WriteLine("Номер уже выбран.");
+    public void ConfirmBooking(BookingContext context)
+    {
+        Console.WriteLine("Бронирование подтверждено. Требуется оплата.");
+        context.CurrentState = new BookingConfirmedState();
+    }
+    public void Pay(BookingContext context) => Console.WriteLine("Сначала подтвердите бронирование.");
+    public void Cancel(BookingContext context)
+    {
+        Console.WriteLine("Бронирование отменено.");
+        context.CurrentState = new IdleState();
+    }
+    public void ChangeRoom(BookingContext context)
+    {
+        context.SelectedRoom = "Номер 407 (Стандарт)";
+        Console.WriteLine($"Номер изменён на: {context.SelectedRoom}");
+    }
+}
+
+public class BookingConfirmedState : IBookingState
+{
+    public void SelectRoom(BookingContext context) => Console.WriteLine("Номер уже подтверждён.");
+    public void ConfirmBooking(BookingContext context) => Console.WriteLine("Бронирование уже подтверждено.");
+    public void Pay(BookingContext context)
+    {
+        context.PaidAmount = context.Amount;
+        Console.WriteLine($"Оплата {context.Amount} руб. прошла успешно!");
+        context.CurrentState = new PaidState();
+    }
+    public void Cancel(BookingContext context)
+    {
+        Console.WriteLine("Бронирование отменено до оплаты.");
+        context.CurrentState = new IdleState();
+    }
+    public void ChangeRoom(BookingContext context) => Console.WriteLine("Нельзя изменить номер после подтверждения.");
+}
+
+public class PaidState : IBookingState
+{
+    public void SelectRoom(BookingContext context) => Console.WriteLine("Бронирование завершено.");
+    public void ConfirmBooking(BookingContext context) => Console.WriteLine("Уже оплачено.");
+    public void Pay(BookingContext context) => Console.WriteLine("Уже оплачено.");
+    public void Cancel(BookingContext context) => Console.WriteLine("Нельзя отменить после оплаты.");
+    public void ChangeRoom(BookingContext context) => Console.WriteLine("Нельзя изменить после оплаты.");
+}
+
+// Клиентский код
+class Program
+{
+    static void Main()
+    {
+        var booking = new BookingContext();
+
+        booking.SelectRoom();
+        booking.ConfirmBooking();
+        booking.Pay(5000);
+
+        Console.WriteLine("\nНовый клиент:");
+        var booking2 = new BookingContext();
+        booking2.SelectRoom();
+        booking2.ChangeRoom();
+        booking2.ConfirmBooking();
+        booking2.Cancel();
+
+        Console.WriteLine("\nГотово!");
+    }
+}

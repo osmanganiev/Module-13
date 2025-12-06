@@ -1,0 +1,23 @@
+@startuml
+[*] --> Created
+
+state Created
+state WaitingForPayment
+state Paid
+state Confirmed
+state Cancelled
+
+Created --> WaitingForPayment : Отправить на оплату
+WaitingForPayment --> Paid : Клиент оплатил
+WaitingForPayment --> Cancelled : Истёк срок оплаты
+
+Paid --> Confirmed : Подтверждение бронирования
+Paid --> Cancelled : Отмена после оплаты (штраф)
+
+Confirmed --> [*]
+Cancelled --> [*]
+
+note right of Cancelled
+  Финальное состояние
+end note
+@enduml

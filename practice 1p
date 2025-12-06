@@ -1,0 +1,37 @@
+@startuml
+[*] --> Idle
+
+state Idle
+state CarSelected
+state OrderConfirmed
+state CarArrived
+state InTrip
+state TripCompleted
+state TripCancelled
+
+Idle --> CarSelected : Выбрать автомобиль
+CarSelected --> OrderConfirmed : Подтвердить заказ
+CarSelected --> Idle : Изменить автомобиль
+CarSelected --> TripCancelled : Отменить заказ
+
+OrderConfirmed --> CarArrived : Водитель принял заказ
+OrderConfirmed --> TripCancelled : Отмена заказа
+
+CarArrived --> InTrip : Пассажир сел в машину
+CarArrived --> TripCancelled : Пассажир отменил
+
+InTrip --> TripCompleted : Поездка завершена
+
+TripCompleted --> [*] : Оплата и завершение
+TripCancelled --> [*] : Заказ отменён
+
+note right of TripCancelled
+  Возможна компенсация
+  или штраф
+end note
+
+note bottom of CarArrived
+  Водитель прибыл.
+  Ожидание пассажира.
+end note
+@enduml

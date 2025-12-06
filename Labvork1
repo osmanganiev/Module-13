@@ -1,0 +1,32 @@
+@startuml
+[*] --> Idle
+
+state Idle
+state RoomSelected
+state BookingConfirmed
+state Paid
+state BookingCancelled
+
+Idle --> RoomSelected : Выбрать номер
+RoomSelected --> BookingConfirmed : Подтвердить бронирование
+RoomSelected --> Idle : Отмена / Изменить номер
+
+BookingConfirmed --> Paid : Оплатить
+BookingConfirmed --> BookingCancelled : Отменить
+
+Paid --> [*] : Бронирование завершено
+
+' Отмена на любом этапе до оплаты
+RoomSelected --> BookingCancelled : Отменить
+BookingConfirmed --> BookingCancelled : Отменить
+
+note right of BookingCancelled
+  Бронирование отменено.
+  Возврат средств (если были внесены).
+end note
+
+note bottom of Paid
+  Номер закреплён за клиентом.
+  Бронирование успешно!
+end note
+@enduml
